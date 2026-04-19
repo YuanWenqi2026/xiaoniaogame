@@ -237,6 +237,9 @@
         if (topHeight < gameHeight * 0.15) topHeight = gameHeight * 0.15;
         if (topHeight > gameHeight * 0.45) topHeight = gameHeight * 0.45;
 
+        var bottomY = topHeight + pipeGap;
+        var bottomHeight = gameHeight - bottomY;
+
         pipes.push({
             x: gameWidth,
             y: 0,
@@ -247,20 +250,18 @@
 
         pipes.push({
             x: gameWidth,
-            y: topHeight + pipeGap,
-            h: gameHeight - topHeight - pipeGap,
+            y: bottomY,
+            h: bottomHeight,
             type: "bottom",
             scored: false
         });
 
-        createFood(topHeight + pipeGap);
+        createFood(topHeight, bottomY);
     }
 
-    function createFood(topPipeBottomY) {
-        var minY = topPipeBottomY + pipeGap * 0.3;
-        var maxY = topPipeBottomY + pipeGap * 0.7;
-        var foodY = minY + Math.random() * (maxY - minY);
-
+    function createFood(topPipeHeight, bottomPipeY) {
+        var foodY = topPipeHeight + pipeGap * 0.5;
+        
         var foodTypes = ["corn", "carrot", "lajiao"];
         var foodType = foodTypes[Math.floor(Math.random() * foodTypes.length)];
 
