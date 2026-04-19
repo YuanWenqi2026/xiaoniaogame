@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>可爱小鸟飞游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        body {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: #222; width: 100vw; height: 100vh;
+            overflow: hidden; position: fixed;
+        }
+        canvas {
+            display: none; width: 100%; height: 100%;
+            image-rendering: pixelated; touch-action: none;
+        }
+        #startBtn {
+            padding: 15px 30px; font-size: 20px;
+            background: #4CAF50; color: white;
+            border: none; border-radius: 10px;
+            cursor: pointer; z-index: 10;
+            touch-action: manipulation;
+        }
+        #loadingText {
+            color: white; font-size: 16px;
+            margin-top: 10px; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<button id="startBtn">加载中...</button>
+<div id="loadingText">正在加载游戏资源...</div>
+<canvas id="gameCanvas"></canvas>
+
+<script>
+(function() {
+    "use strict";
+
+    var canvas, ctx, startBtn, loadingText;
+    var gameStarted = false;
+    var allLoaded = false;
+    var loadCount = 0;
+    var totalCount = 8;
+
+    var bird = {
+        x: 90,
+        y: 200,
+        size: 50,
+        gravity: 0.12,
+        lift: -2.5,
+        velocity: 0,
+        wing: "close",
+        speed: 1.5
+    };
+
+    var pipes = [];
+    var pipeWidth = 70;
+    var pipeGap = bird.size * 3;
+    var pipeSpeed = 1.2;
+
+    var foods = [];
+    var score = 0;
+
+    var imgBg, imgBirdClose, imgBirdOpen, imgPipeTop, imgPipeBottom;
+    var imgCorn, imgCarrot, imgLajiao;
+    var soundBg, soundEat, soundWing;
+
+    function updateLoadStatus() {
+        loadCount++;
+        if (loadCount >= totalCount) {
+            allLoaded = true;
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.textContent = "开始游戏";
+            }
+            if (loadingText) {
+                loadingText.textContent = "加载完成！";
+            }
+        }
+    }
+
+    function init() {
+        canvas = document.getElementById("gameCanvas");
+        ctx = canvas.getContext("2d");
+        startBtn = document.getElementById("startBtn");
+        loadingText = document.getElementById("loadingText");
+
+        resizeCanvas();
+
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.textContent = "加载中...";
+        }
+
+        imgBg = new Image();
+        imgBg.onload = updateLoadStatus;
+        imgBg.onerror = updateLoadStatus;
+        imgBg.src = "bg.png.png";
+
+        imgBirdClose = new Image();
+        imgBirdClose.onload = updateLoadStatus;
+        imgBirdClose.onerror = updateLoadStatus;
+        imgBirdClose.src = "bird_close.png.png";
+
+        imgBirdOpen = new Image();
+        imgBirdOpen.onload = updateLoadStatus;
+        imgBirdOpen.onerror = updateLoadStatus;
+        imgBirdOpen.src = "小鸟open.png";
+
+        imgPipeTop = new Image();
+        imgPipeTop.onload = updateLoadStatus;
+        imgPipeTop.onerror = updateLoadStatus;
+        imgPipeTop.src = "pipe_top.png.png";
+
+        imgPipeBottom = new Image();
+        imgPipeBottom.onload = updateLoadStatus;
+        imgPipeBottom.onerror = updateLoadStatus;
+        imgPipeBottom.src = "zhuzi.png";
+
+        imgCorn = new Image();
+        imgCorn.onload = updateLoadStatus;
+        imgCorn.onerror = updateLoadStatus;
+        imgCorn.src = "fruit.png.png";
+
+        imgCarrot = new Image();
+        imgCarrot.onload = updateLoadStatus;
+        imgCarrot.onerror = updateLoadStatus;
+        imgCarrot.src = "luobo.png";
+
+        imgLajiao = new Image();
+        imgLajiao.onload = updateLoadStatus;
+        imgLajiao.onerror = updateLoadStatus;
+        imgLajiao.src = "lajiao.png";
+
+        soundBg = new Audio("Velvet Afternoon 背景音.mp3");
+        soundBg.loop = true;
+        soundBg.volume = 0.5;
+
+        soundEat = new Audio("吃水果.mp3");
+        soundEat.volume = 0.7;
+
+        soundWing = new Audio("扇翅膀.mp3");
+        soundWing.volume = 0.6;
+
+        if (startBtn) {
+            startBtn.addEventListener("click", startGame);
+            startBtn.addEventListener("touchend", function(e) {
+                e.preventDefault();
+                startGame();
+            });
+        }
+
+        if (canvas) {
+            canvas.addEventListener("click", jump);
+            canvas.addEventListener("touchstart", function(e) {
+                e.preventDefault();
+                jump();
+            }, { passive: false });
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+    }
+
+    function resizeCanvas() {
+        if (!canvas) return;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        bird.y = canvas.height / 2;
+        pipeGap = bird.size * 3;
+    }
+
+    function jump(e) {
+        if (e) e.preventDefault();
+        if (!gameStarted) return;
+        bird.velocity = bird.lift;
+        bird.wing = bird.wing === "close" ? "open" : "close";
+
+        try {
+            soundWing.currentTime = 0;
+            soundWing.play();
+        } catch (err) {}
+    }
+
+    function startGame() {
+        if (!allLoaded) {
+            alert("资源还在加载中，请稍候");
+            return;
+        }
+        gameStarted = true;
+        if (startBtn) startBtn.style.display = "none";
+        if (loadingText) loadingText.style.display = "none";
+        if (canvas) canvas.style.display = "block";
+
+        try {
+            soundBg.play();
+        } catch (err) {}
+
+        resetGame();
+        gameLoop();
+    }
+
+    function resetGame() {
+        bird.x = 90;
+        bird.y = canvas.height / 2;
+        bird.velocity = 0;
+        bird.wing = "close";
+        pipes = [];
+        foods = [];
+        score = 0;
+    }
+
+    function createPipe() {
+        var minPipeHeight = 60;
+        var maxTopHeight = canvas.height - pipeGap - minPipeHeight;
+        var topH = Math.random() * (maxTopHeight - minPipeHeight) + minPipeHeight;
+
+        pipes.push(
+            { x: canvas.width, y: 0, h: topH, type: "top", scored: false },
+            { x: canvas.width, y: topH + pipeGap, h: canvas.height - topH - pipeGap, type: "bottom" }
+        );
+        createFood(topH);
+    }
+
+    function createFood(topH) {
+        var centerY = topH + pipeGap / 2;
+        var ty = centerY + (Math.random() - 0.5) * (pipeGap - 60);
+        ty = Math.max(topH + 25, Math.min(topH + pipeGap - 25, ty));
+
+        var list = ["corn", "carrot", "lajiao"];
+        var type = list[Math.floor(Math.random() * 3)];
+        foods.push({ x: canvas.width + 30, y: ty, size: 32, type: type });
+    }
+
+    function gameOver() {
+        gameStarted = false;
+
+        try {
+            soundBg.pause();
+        } catch (err) {}
+
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 36px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("游戏结束", canvas.width / 2, canvas.height / 2 - 30);
+        ctx.fillText("最终得分：" + score, canvas.width / 2, canvas.height / 2 + 10);
+
+        setTimeout(function() {
+            if (startBtn) {
+                startBtn.style.display = "block";
+                startBtn.textContent = "再来一次";
+            }
+            if (canvas) canvas.style.display = "none";
+            resetGame();
+        }, 2000);
+    }
+
+    function gameLoop() {
+        if (!gameStarted) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (imgBg && imgBg.complete) {
+            ctx.drawImage(imgBg, 0, 0, canvas.width, canvas.height);
+        }
+
+        bird.x += bird.speed;
+        bird.velocity += bird.gravity;
+        bird.y += bird.velocity;
+
+        var birdImg = bird.wing === "close" ? imgBirdClose : imgBirdOpen;
+        if (birdImg && birdImg.complete) {
+            ctx.drawImage(birdImg, bird.x - bird.size / 2, bird.y - bird.size / 2, bird.size, bird.size);
+        }
+
+        if (Math.random() < 0.008) createPipe();
+
+        for (var i = pipes.length - 1; i >= 0; i--) {
+            var p = pipes[i];
+            p.x -= pipeSpeed;
+
+            var pImg = p.type === "top" ? imgPipeTop : imgPipeBottom;
+            if (pImg && pImg.complete) {
+                ctx.drawImage(pImg, p.x, p.y, pipeWidth, p.h);
+            }
+
+            if (bird.x + 20 > p.x && bird.x - 20 < p.x + pipeWidth &&
+                bird.y + 20 > p.y && bird.y - 20 < p.y + p.h) {
+                gameOver();
+                return;
+            }
+
+            if (p.x + pipeWidth < bird.x && !p.scored && p.type === "top") {
+                p.scored = true;
+                score += 1;
+            }
+
+            if (p.x + pipeWidth < -50) pipes.splice(i, 1);
+        }
+
+        for (var j = foods.length - 1; j >= 0; j--) {
+            var f = foods[j];
+            f.x -= pipeSpeed;
+
+            var fImg = null;
+            if (f.type === "corn") fImg = imgCorn;
+            else if (f.type === "carrot") fImg = imgCarrot;
+            else if (f.type === "lajiao") fImg = imgLajiao;
+
+            if (fImg && fImg.complete) {
+                ctx.drawImage(fImg, f.x - f.size / 2, f.y - f.size / 2, f.size, f.size);
+            }
+
+            var d = Math.hypot(bird.x - f.x, bird.y - f.y);
+            if (d < 35) {
+                try {
+                    soundEat.currentTime = 0;
+                    soundEat.play();
+                } catch (err) {}
+                score += 3;
+                foods.splice(j, 1);
+            }
+            if (f.x < -50) foods.splice(j, 1);
+        }
+
+        if (bird.y < 0 || bird.y > canvas.height) {
+            gameOver();
+            return;
+        }
+
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 22px Arial";
+        ctx.fillText("得分：" + score, 20, 40);
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    window.addEventListener("load", init);
+})();
+</script>
+
+</body>
+</html>
