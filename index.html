@@ -46,7 +46,6 @@
     var gameStarted = false;
     var gameWidth, gameHeight;
     var scaleFactor = 1;
-    var animationId = null;
 
     var bird = {
         x: 80,
@@ -55,7 +54,7 @@
         gravity: 0.2,
         lift: -4,
         velocity: 0,
-        wing: "close",
+        wingOpen: false,
         speed: 2
     };
 
@@ -99,7 +98,6 @@
         startBtn = document.getElementById("startBtn");
 
         initGameDimensions();
-        resizeCanvas();
 
         imgBg.src = "bg.png.png";
         imgBirdClose.src = "bird_close.png.png";
@@ -134,7 +132,7 @@
 
         window.addEventListener("resize", resizeCanvas);
 
-        drawInitialScreen();
+        resizeCanvas();
         gameLoop();
     }
 
@@ -147,24 +145,19 @@
         }
     }
 
-    function drawInitialScreen() {
-        ctx.fillStyle = "#87CEEB";
-        ctx.fillRect(0, 0, gameWidth, gameHeight);
-
-        ctx.fillStyle = "#228B22";
-        ctx.fillRect(0, gameHeight - 50, gameWidth, 50);
-
-        if (imgBg.complete && imgBg.width > 0) {
-            ctx.globalAlpha = 0.7;
+    function drawBackground() {
+        if (imgBg && imgBg.complete && imgBg.width > 0) {
             ctx.drawImage(imgBg, 0, 0, gameWidth, gameHeight);
-            ctx.globalAlpha = 1;
+        } else {
+            ctx.fillStyle = "#87CEEB";
+            ctx.fillRect(0, 0, gameWidth, gameHeight);
+            ctx.fillStyle = "#228B22";
+            ctx.fillRect(0, gameHeight - 50, gameWidth, 50);
         }
-
-        drawBird();
     }
 
     function drawBird() {
-        var birdImg = bird.wing === "close" ? imgBirdClose : imgBirdOpen;
+        var birdImg = bird.wingOpen ? imgBirdOpen : imgBirdClose;
         if (birdImg && birdImg.complete && birdImg.width > 0) {
             ctx.drawImage(birdImg, bird.x - bird.size/2, bird.y - bird.size/2, bird.size, bird.size);
         } else {
@@ -179,11 +172,40 @@
         }
     }
 
+    function drawPipe(p) {
+        var pImg = p.type === "top" ? imgPipeTop : imgPipeBottom;
+        if (pImg && pImg.complete && pImg.width > 0) {
+            ctx.drawImage(pImg, p.x, p.y, pipeWidth, p.h);
+        } else {
+            ctx.fillStyle = "#228B22";
+            ctx.fillRect(p.x, p.y, pipeWidth, p.h);
+            ctx.fillStyle = "#654321";
+            ctx.fillRect(p.x, p.y, pipeWidth, 15);
+            ctx.fillRect(p.x, p.y + p.h - 15, pipeWidth, 15);
+        }
+    }
+
+    function drawFood(f) {
+        var fImg = null;
+        if (f.type === "corn") fImg = imgCorn;
+        else if (f.type === "carrot") fImg = imgCarrot;
+        else if (f.type === "lajiao") fImg = imgLajiao;
+
+        if (fImg && fImg.complete && fImg.width > 0) {
+            ctx.drawImage(fImg, f.x - f.size/2, f.y - f.size/2, f.size, f.size);
+        } else {
+            ctx.fillStyle = "#FF6347";
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, f.size/2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
     function jump(e) {
         if (e) e.preventDefault();
         if (!gameStarted) return;
         bird.velocity = bird.lift;
-        bird.wing = bird.wing === "close" ? "open" : "close";
+        bird.wingOpen = !bird.wingOpen;
 
         try {
             soundWing.currentTime = 0;
@@ -198,6 +220,7 @@
         startBtn.style.display = "none";
         bird.y = gameHeight / 2;
         bird.velocity = 0;
+        bird.wingOpen = false;
         pipes = [];
         foods = [];
         score = 0;
@@ -213,8 +236,6 @@
 
         if (topHeight < gameHeight * 0.15) topHeight = gameHeight * 0.15;
         if (topHeight > gameHeight * 0.45) topHeight = gameHeight * 0.45;
-
-        var bottomY = gameHeight - (gameHeight - topHeight - pipeGap);
 
         pipes.push({
             x: gameWidth,
@@ -251,50 +272,11 @@
         });
     }
 
-    function drawBackground() {
-        if (imgBg && imgBg.complete && imgBg.width > 0) {
-            ctx.drawImage(imgBg, 0, 0, gameWidth, gameHeight);
-        } else {
-            ctx.fillStyle = "#87CEEB";
-            ctx.fillRect(0, 0, gameWidth, gameHeight);
-            ctx.fillStyle = "#228B22";
-            ctx.fillRect(0, gameHeight - 50, gameWidth, 50);
-        }
-    }
-
-    function drawPipe(p) {
-        var pImg = p.type === "top" ? imgPipeTop : imgPipeBottom;
-        if (pImg && pImg.complete && pImg.width > 0) {
-            ctx.drawImage(pImg, p.x, p.y, pipeWidth, p.h);
-        } else {
-            ctx.fillStyle = "#228B22";
-            ctx.fillRect(p.x, p.y, pipeWidth, p.h);
-            ctx.fillStyle = "#654321";
-            ctx.fillRect(p.x + pipeWidth * 0.1, p.y, pipeWidth * 0.8, 15);
-        }
-    }
-
-    function drawFood(f) {
-        var fImg = null;
-        if (f.type === "corn") fImg = imgCorn;
-        else if (f.type === "carrot") fImg = imgCarrot;
-        else if (f.type === "lajiao") fImg = imgLajiao;
-
-        if (fImg && fImg.complete && fImg.width > 0) {
-            ctx.drawImage(fImg, f.x - f.size/2, f.y - f.size/2, f.size, f.size);
-        } else {
-            ctx.fillStyle = "#FF6347";
-            ctx.beginPath();
-            ctx.arc(f.x, f.y, f.size/2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
     function checkCollision() {
-        var birdLeft = bird.x - bird.size/2;
-        var birdRight = bird.x + bird.size/2;
-        var birdTop = bird.y - bird.size/2;
-        var birdBottom = bird.y + bird.size/2;
+        var birdLeft = bird.x - bird.size/2 + 5;
+        var birdRight = bird.x + bird.size/2 - 5;
+        var birdTop = bird.y - bird.size/2 + 5;
+        var birdBottom = bird.y + bird.size/2 - 5;
 
         if (birdTop < 0 || birdBottom > gameHeight) {
             return true;
@@ -393,7 +375,7 @@
         ctx.font = "bold 24px Arial";
         ctx.fillText("得分：" + score, 15, 35);
 
-        animationId = requestAnimationFrame(gameLoop);
+        requestAnimationFrame(gameLoop);
     }
 
     function gameOver() {
