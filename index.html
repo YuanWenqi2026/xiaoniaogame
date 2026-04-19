@@ -68,9 +68,7 @@
     var foods = [];
     var score = 0;
 
-    // ==========================
-    // 图片对象（提前预加载）
-    // ==========================
+    // 图片对象
     var imgBg = new Image();
     var imgBirdClose = new Image();
     var imgBirdOpen = new Image();
@@ -80,14 +78,8 @@
     var imgCarrot = new Image();
     var imgLajiao = new Image();
 
-    // ==========================
-    // 音频对象（提前预加载）
-    // ==========================
+    // 音频对象
     var soundBg, soundEat, soundWing;
-
-    // 图片加载计数器
-    var imagesLoaded = 0;
-    var totalImages = 8;
 
     function initGameDimensions() {
         gameWidth = window.innerWidth;
@@ -109,27 +101,7 @@
 
         initGameDimensions();
 
-        // 绑定图片加载事件
-        imgBg.onload = function() { imagesLoaded++; }
-        imgBirdClose.onload = function() { imagesLoaded++; }
-        imgBirdOpen.onload = function() { imagesLoaded++; }
-        imgPipeTop.onload = function() { imagesLoaded++; }
-        imgPipeBottom.onload = function() { imagesLoaded++; }
-        imgCorn.onload = function() { imagesLoaded++; }
-        imgCarrot.onload = function() { imagesLoaded++; }
-        imgLajiao.onload = function() { imagesLoaded++; }
-
-        // 图片加载失败时也计数，避免卡住
-        imgBg.onerror = function() { console.error("背景图加载失败"); imagesLoaded++; }
-        imgBirdClose.onerror = function() { console.error("小鸟合翅图加载失败"); imagesLoaded++; }
-        imgBirdOpen.onerror = function() { console.error("小鸟开翅图加载失败"); imagesLoaded++; }
-        imgPipeTop.onerror = function() { console.error("上管道图加载失败"); imagesLoaded++; }
-        imgPipeBottom.onerror = function() { console.error("下管道图加载失败"); imagesLoaded++; }
-        imgCorn.onerror = function() { console.error("玉米图加载失败"); imagesLoaded++; }
-        imgCarrot.onerror = function() { console.error("胡萝卜图加载失败"); imagesLoaded++; }
-        imgLajiao.onerror = function() { console.error("辣椒图加载失败"); imagesLoaded++; }
-
-        // 设置图片路径（和仓库文件名完全一致）
+        // ✅ 100% 对齐仓库文件名的路径
         imgBg.src = "bg.png.png";
         imgBirdClose.src = "bird_close.png.png";
         imgBirdOpen.src = "小鸟open.png";
@@ -139,18 +111,39 @@
         imgCarrot.src = "luobo.png";
         imgLajiao.src = "lajiao.png";
 
-        // 初始化音频
+        // 监听图片加载结果（控制台会打印，方便排查）
+        imgBg.onload = () => console.log("✅ bg.png.png 加载成功");
+        imgBg.onerror = () => console.error("❌ bg.png.png 加载失败（404/路径错误）");
+        imgBirdClose.onload = () => console.log("✅ bird_close.png.png 加载成功");
+        imgBirdClose.onerror = () => console.error("❌ bird_close.png.png 加载失败");
+        imgBirdOpen.onload = () => console.log("✅ 小鸟open.png 加载成功");
+        imgBirdOpen.onerror = () => console.error("❌ 小鸟open.png 加载失败");
+        imgPipeTop.onload = () => console.log("✅ pipe_top.png.png 加载成功");
+        imgPipeTop.onerror = () => console.error("❌ pipe_top.png.png 加载失败");
+        imgPipeBottom.onload = () => console.log("✅ zhuzi.png 加载成功");
+        imgPipeBottom.onerror = () => console.error("❌ zhuzi.png 加载失败");
+        imgCorn.onload = () => console.log("✅ fruit.png.png 加载成功");
+        imgCorn.onerror = () => console.error("❌ fruit.png.png 加载失败");
+        imgCarrot.onload = () => console.log("✅ luobo.png 加载成功");
+        imgCarrot.onerror = () => console.error("❌ luobo.png 加载失败");
+        imgLajiao.onload = () => console.log("✅ lajiao.png 加载成功");
+        imgLajiao.onerror = () => console.error("❌ lajiao.png 加载失败");
+
+        // 音频初始化（同样对齐文件名）
         soundBg = new Audio("Velvet Afternoon 背景音.mp3");
         soundBg.loop = true;
         soundBg.volume = 0.5;
+        soundBg.onerror = () => console.error("❌ Velvet Afternoon 背景音.mp3 加载失败");
 
         soundEat = new Audio("吃水果.mp3");
         soundEat.volume = 0.7;
+        soundEat.onerror = () => console.error("❌ 吃水果.mp3 加载失败");
 
         soundWing = new Audio("扇翅膀.mp3");
         soundWing.volume = 0.6;
+        soundWing.onerror = () => console.error("❌ 扇翅膀.mp3 加载失败");
 
-        // 绑定按钮事件
+        // 绑定事件
         startBtn.addEventListener("click", startGame);
         startBtn.addEventListener("touchend", function(e) {
             e.preventDefault();
@@ -179,44 +172,18 @@
     }
 
     function drawBackground() {
-        // 强制绘制图片，即使未完全加载
-        if (imgBg && imgBg.src) {
-            ctx.drawImage(imgBg, 0, 0, gameWidth, gameHeight);
-        } else {
-            ctx.fillStyle = "#87CEEB";
-            ctx.fillRect(0, 0, gameWidth, gameHeight);
-            ctx.fillStyle = "#228B22";
-            ctx.fillRect(0, gameHeight - 50, gameWidth, 50);
-        }
+        // 强制绘制图片，不做加载判断
+        ctx.drawImage(imgBg, 0, 0, gameWidth, gameHeight);
     }
 
     function drawBird() {
         var birdImg = bird.wingOpen ? imgBirdOpen : imgBirdClose;
-        if (birdImg && birdImg.src) {
-            ctx.drawImage(birdImg, bird.x - bird.size/2, bird.y - bird.size/2, bird.size, bird.size);
-        } else {
-            ctx.fillStyle = "#FFD700";
-            ctx.beginPath();
-            ctx.arc(bird.x, bird.y, bird.size/2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = "#000";
-            ctx.beginPath();
-            ctx.arc(bird.x + bird.size/4, bird.y - bird.size/6, bird.size/8, 0, Math.PI * 2);
-            ctx.fill();
-        }
+        ctx.drawImage(birdImg, bird.x - bird.size/2, bird.y - bird.size/2, bird.size, bird.size);
     }
 
     function drawPipe(p) {
         var pImg = p.type === "top" ? imgPipeTop : imgPipeBottom;
-        if (pImg && pImg.src) {
-            ctx.drawImage(pImg, p.x, p.y, pipeWidth, p.h);
-        } else {
-            ctx.fillStyle = "#228B22";
-            ctx.fillRect(p.x, p.y, pipeWidth, p.h);
-            ctx.fillStyle = "#654321";
-            ctx.fillRect(p.x, p.y, pipeWidth, 15);
-            ctx.fillRect(p.x, p.y + p.h - 15, pipeWidth, 15);
-        }
+        ctx.drawImage(pImg, p.x, p.y, pipeWidth, p.h);
     }
 
     function drawFood(f) {
@@ -224,15 +191,7 @@
         if (f.type === "corn") fImg = imgCorn;
         else if (f.type === "carrot") fImg = imgCarrot;
         else if (f.type === "lajiao") fImg = imgLajiao;
-
-        if (fImg && fImg.src) {
-            ctx.drawImage(fImg, f.x - f.size/2, f.y - f.size/2, f.size, f.size);
-        } else {
-            ctx.fillStyle = "#FF6347";
-            ctx.beginPath();
-            ctx.arc(f.x, f.y, f.size/2, 0, Math.PI * 2);
-            ctx.fill();
-        }
+        ctx.drawImage(fImg, f.x - f.size/2, f.y - f.size/2, f.size, f.size);
     }
 
     function jump(e) {
@@ -241,15 +200,10 @@
         bird.velocity = bird.lift;
         bird.wingOpen = !bird.wingOpen;
 
-        // 强制播放扇翅膀音效
         try {
             soundWing.currentTime = 0;
-            soundWing.play().catch(function(err) {
-                console.error("扇翅膀音效播放失败:", err);
-            });
-        } catch(err) {
-            console.error("扇翅膀音效播放失败:", err);
-        }
+            soundWing.play();
+        } catch(err) {}
     }
 
     function startGame() {
@@ -265,16 +219,12 @@
         score = 0;
         lastPipeTime = Date.now();
 
-        // 强制触发一次音频上下文，解决浏览器自动播放限制
-        soundWing.play().then(function() {
+        // 触发音频上下文，解决浏览器限制
+        soundWing.play().then(() => {
             soundWing.pause();
             soundWing.currentTime = 0;
-            soundBg.play().catch(function(err) {
-                console.error("背景音乐播放失败:", err);
-            });
-        }).catch(function(err) {
-            console.error("音频初始化失败:", err);
-        });
+            soundBg.play();
+        }).catch(err => console.error("❌ 音频初始化失败:", err));
     }
 
     function createPipe() {
@@ -391,12 +341,8 @@
                 if (dist < bird.size/2 + f.size/2) {
                     try {
                         soundEat.currentTime = 0;
-                        soundEat.play().catch(function(err) {
-                            console.error("吃水果音效播放失败:", err);
-                        });
-                    } catch(err) {
-                        console.error("吃水果音效播放失败:", err);
-                    }
+                        soundEat.play();
+                    } catch(err) {}
                     score += 3;
                     foods.splice(k, 1);
                     k--;
