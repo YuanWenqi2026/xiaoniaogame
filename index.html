@@ -71,18 +71,19 @@
     var bird = {
         x: 90,
         y: 200,
-        size: 40,
-        gravity: 0.25,
-        lift: -4.5,
+        size: 35,
+        gravity: 0.15,
+        lift: -3.5,
         velocity: 0,
         wing: "close",
         speed: 2
     };
 
     var pipes = [];
-    var pipeWidth = 60;
-    var pipeGap = 120;
-    var pipeSpeed = 2;
+    var pipeWidth = 70;
+    var pipeGap = 130;
+    var pipeSpeed = 1.5;
+    var pipeSpacing = 0;
 
     var foods = [];
     var score = 0;
@@ -106,11 +107,12 @@
         var baseHeight = 667;
         scaleFactor = Math.min(gameWidth / baseWidth, gameHeight / baseHeight);
 
-        bird.size = Math.round(40 * scaleFactor);
-        pipeWidth = Math.round(60 * scaleFactor);
-        pipeGap = Math.round(120 * scaleFactor);
-        pipeSpeed = Math.round(2 * scaleFactor);
-        bird.speed = Math.round(2 * scaleFactor);
+        bird.size = Math.round(35 * scaleFactor);
+        pipeWidth = Math.round(70 * scaleFactor);
+        pipeGap = Math.max(bird.size * 4, Math.round(130 * scaleFactor));
+        pipeSpeed = Math.round(1.5 * scaleFactor);
+        pipeSpacing = Math.round(200 * scaleFactor);
+        bird.x = Math.round(gameWidth * 0.2);
     }
 
     function init() {
@@ -168,7 +170,6 @@
         if (!canvas) return;
         canvas.width = gameWidth;
         canvas.height = gameHeight;
-        bird.y = gameHeight / 2;
 
         checkOrientation();
     }
@@ -220,25 +221,30 @@
     }
 
     function createPipe() {
-        var minPipeHeight = gameHeight * 0.1;
-        var maxTopHeight = gameHeight - pipeGap - minPipeHeight;
-        var topH = Math.random() * (maxTopHeight - minPipeHeight) + minPipeHeight;
+        var topPipeHeight = gameHeight * 0.25 + Math.random() * gameHeight * 0.2;
+        var bottomPipeHeight = gameHeight - topPipeHeight - pipeGap;
+
+        if (topPipeHeight < gameHeight * 0.15) topPipeHeight = gameHeight * 0.15;
+        if (bottomPipeHeight < gameHeight * 0.15) bottomPipeHeight = gameHeight * 0.15;
+
+        var topPipeY = gameHeight - topPipeHeight - pipeGap;
 
         pipes.push(
-            { x: gameWidth, y: 0, h: topH, type: "top", scored: false },
-            { x: gameWidth, y: topH + pipeGap, h: gameHeight - topH - pipeGap, type: "bottom" }
+            { x: gameWidth, y: 0, h: topPipeY, type: "top", scored: false },
+            { x: gameWidth, y: gameHeight - bottomPipeHeight, h: bottomPipeHeight, type: "bottom", scored: false }
         );
-        createFood(topH);
+
+        createFood(topPipeY);
     }
 
-    function createFood(topH) {
-        var centerY = topH + pipeGap / 2;
-        var ty = centerY + (Math.random() - 0.5) * (pipeGap - 40);
-        ty = Math.max(topH + 20, Math.min(topH + pipeGap - 20, ty));
+    function createFood(topPipeBottomY) {
+        var minY = topPipeBottomY + pipeGap * 0.4;
+        var maxY = topPipeBottomY + pipeGap * 0.75;
+        var ty = minY + Math.random() * (maxY - minY);
 
         var list = ["corn", "carrot", "lajiao"];
-        var type = list[Math.floor(Math.random() * 3)];
-        var foodSize = Math.round(28 * scaleFactor);
+        var type = list[Math.floor(Math.random() * list.length)];
+        var foodSize = Math.round(25 * scaleFactor);
         foods.push({ x: gameWidth + 30, y: ty, size: foodSize, type: type });
     }
 
@@ -332,8 +338,19 @@
 
         drawBird();
 
-        if (!gamePaused && Math.random() < 0.02) {
-            createPipe();
+        var lastPipeX = gameWidth;
+        if (pipes.length > 0) {
+            for (var k = 0; k < pipes.length; k++) {
+                if (pipes[k].x > 0) {
+                    lastPipeX = Math.min(lastPipeX, pipes[k].x);
+                }
+            }
+        }
+
+        if (!gamePaused && lastPipeX < gameWidth - pipeSpacing) {
+            if (Math.random() < 0.03) {
+                createPipe();
+            }
         }
 
         for (var i = pipes.length - 1; i >= 0; i--) {
@@ -343,7 +360,7 @@
             drawPipe(p);
 
             if (!gamePaused) {
-                var hitboxPadding = bird.size * 0.3;
+                var hitboxPadding = bird.size * 0.35;
                 if (bird.x + hitboxPadding > p.x &&
                     bird.x - hitboxPadding < p.x + pipeWidth &&
                     bird.y + hitboxPadding > p.y &&
@@ -368,7 +385,7 @@
 
             if (!gamePaused) {
                 var d = Math.hypot(bird.x - f.x, bird.y - f.y);
-                if (d < bird.size * 0.7) {
+                if (d < bird.size * 0.8) {
                     try {
                         soundEat.currentTime = 0;
                         soundEat.play();
@@ -382,7 +399,7 @@
         }
 
         if (!gamePaused && (bird.y <= bird.size / 2 || bird.y >= gameHeight - bird.size / 2)) {
-            if (bird.velocity !== 0) {
+            if (Math.abs(bird.velocity) > 0.1) {
                 gameOver();
             }
         }
