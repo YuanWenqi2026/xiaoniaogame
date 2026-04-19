@@ -79,10 +79,47 @@
 
     var soundBg, soundEat, soundWing;
 
+    function compressImage(img, maxWidth, maxHeight, callback) {
+        var tempCanvas = document.createElement("canvas");
+        var tempCtx = tempCanvas.getContext("2d");
+
+        var ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
+        var newWidth = img.width * ratio;
+        var newHeight = img.height * ratio;
+
+        tempCanvas.width = newWidth;
+        tempCanvas.height = newHeight;
+
+        tempCtx.drawImage(img, 0, 0, newWidth, newHeight);
+
+        var compressedDataUrl = tempCanvas.toDataURL("image/png", 0.8);
+
+        var compressedImg = new Image();
+        compressedImg.onload = function() {
+            callback(compressedImg);
+        };
+        compressedImg.src = compressedDataUrl;
+    }
+
+    function loadCompressedImage(img, src, maxWidth, maxHeight, callback) {
+        var tempImg = new Image();
+        tempImg.onload = function() {
+            compressImage(tempImg, maxWidth, maxHeight, function(compressedImg) {
+                img.src = compressedImg.src;
+                if (callback) callback();
+            });
+        };
+        tempImg.onerror = function() {
+            img.src = src;
+            if (callback) callback();
+        };
+        tempImg.src = src;
+    }
+
     function initGameDimensions() {
         gameWidth = window.innerWidth;
         gameHeight = window.innerHeight;
-        scaleFactor = gameHeight / 667;
+        scaleFactor = Math.min(gameWidth / 375, gameHeight / 667);
 
         bird.size = Math.round(40 * scaleFactor);
         bird.x = Math.round(gameWidth * 0.2);
@@ -99,14 +136,18 @@
 
         initGameDimensions();
 
-        imgBg.src = "bg.png.png";
-        imgBirdClose.src = "bird_close.png.png";
-        imgBirdOpen.src = "小鸟open.png";
-        imgPipeTop.src = "pipe_top.png.png";
-        imgPipeBottom.src = "zhuzi.png";
-        imgCorn.src = "fruit.png.png";
-        imgCarrot.src = "luobo.png";
-        imgLajiao.src = "lajiao.png";
+        var maxImgWidth = Math.round(gameWidth * 0.5);
+        var maxImgHeight = Math.round(gameHeight * 0.3);
+        var birdMaxSize = Math.round(80 * scaleFactor);
+
+        loadCompressedImage(imgBg, "bg.png.png", gameWidth, gameHeight);
+        loadCompressedImage(imgBirdClose, "bird_close.png.png", birdMaxSize, birdMaxSize);
+        loadCompressedImage(imgBirdOpen, "小鸟open.png", birdMaxSize, birdMaxSize);
+        loadCompressedImage(imgPipeTop, "pipe_top.png.png", maxImgWidth, maxImgHeight);
+        loadCompressedImage(imgPipeBottom, "zhuzi.png", maxImgWidth, maxImgHeight);
+        loadCompressedImage(imgCorn, "fruit.png.png", maxImgWidth * 0.5, maxImgHeight * 0.5);
+        loadCompressedImage(imgCarrot, "luobo.png", maxImgWidth * 0.5, maxImgHeight * 0.5);
+        loadCompressedImage(imgLajiao, "lajiao.png", maxImgWidth * 0.5, maxImgHeight * 0.5);
 
         soundBg = new Audio("Velvet Afternoon 背景音.mp3");
         soundBg.loop = true;
@@ -131,6 +172,9 @@
         });
 
         window.addEventListener("resize", resizeCanvas);
+        window.addEventListener("orientationchange", function() {
+            setTimeout(resizeCanvas, 100);
+        });
 
         resizeCanvas();
         gameLoop();
