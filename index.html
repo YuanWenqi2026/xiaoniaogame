@@ -140,14 +140,38 @@
         var maxImgHeight = Math.round(gameHeight * 0.3);
         var birdMaxSize = Math.round(80 * scaleFactor);
 
-        loadCompressedImage(imgBg, "bg.png.png", gameWidth, gameHeight);
-        loadCompressedImage(imgBirdClose, "bird_close.png.png", birdMaxSize, birdMaxSize);
-        loadCompressedImage(imgBirdOpen, "小鸟open.png", birdMaxSize, birdMaxSize);
-        loadCompressedImage(imgPipeTop, "pipe_top.png.png", maxImgWidth, maxImgHeight);
-        loadCompressedImage(imgPipeBottom, "zhuzi.png", maxImgWidth, maxImgHeight);
-        loadCompressedImage(imgCorn, "fruit.png.png", maxImgWidth * 0.5, maxImgHeight * 0.5);
-        loadCompressedImage(imgCarrot, "luobo.png", maxImgWidth * 0.5, maxImgHeight * 0.5);
-        loadCompressedImage(imgLajiao, "lajiao.png", maxImgWidth * 0.5, maxImgHeight * 0.5);
+        console.log('开始加载资源...');
+        
+        loadCompressedImage(imgBg, "bg.png.png", gameWidth, gameHeight, function() {
+            console.log('背景图加载完成');
+        });
+        loadCompressedImage(imgBirdClose, "bird_close.png.png", birdMaxSize, birdMaxSize, function() {
+            console.log('小鸟闭合翅膀图片加载完成');
+        });
+        loadCompressedImage(imgBirdOpen, "小鸟open.png", birdMaxSize, birdMaxSize, function() {
+            console.log('小鸟张开翅膀图片加载完成');
+        });
+        loadCompressedImage(imgPipeTop, "pipe_top.png.png", maxImgWidth, maxImgHeight, function() {
+            console.log('上方管道图片加载完成');
+        });
+        loadCompressedImage(imgPipeBottom, "zhuzi.png", maxImgWidth, maxImgHeight, function() {
+            console.log('下方管道图片加载完成');
+        });
+        loadCompressedImage(imgCorn, "fruit.png.png", maxImgWidth * 0.5, maxImgHeight * 0.5, function() {
+            console.log('水果玉米图片加载完成');
+        });
+        loadCompressedImage(imgCarrot, "luobo.png", maxImgWidth * 0.5, maxImgHeight * 0.5, function() {
+            console.log('胡萝卜图片加载完成');
+        });
+        loadCompressedImage(imgLajiao, "lajiao.png", maxImgWidth * 0.5, maxImgHeight * 0.5, function() {
+            console.log('辣椒图片加载完成');
+        });
+        
+        console.log('音频文件路径:', {
+            bg: "Velvet Afternoon 背景音.mp3",
+            eat: "吃水果.mp3",
+            wing: "扇翅膀.mp3"
+        });
 
         soundBg = new Audio("Velvet Afternoon 背景音.mp3");
         soundBg.loop = true;
